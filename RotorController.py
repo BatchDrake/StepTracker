@@ -21,6 +21,8 @@ import numpy as np
 class RotorController:
   def __init__(self, port: str, baudrate: int = 115200):
     self._port = port
+    self._minspeed = {'AZ' : 70, 'EL' : 100}
+
     self._serial = serial.Serial(
       port       = port,
       baudrate   = baudrate,
@@ -58,8 +60,12 @@ class RotorController:
       if fields[1] == fr"OVERCURRENT[{motor}]":
         return
     
+  def minSpeed(self, motor: str):
+    return self._minspeed[motor]
+  
   def setMinSpeed(self, motor: str, speed: float):
     self.writeCmd(fr'MINSPEED {motor} {speed}')
+    self._minspeed[motor] = speed
 
     while True:
       fields = self.waitInfo()

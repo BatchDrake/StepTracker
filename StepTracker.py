@@ -35,6 +35,9 @@ class StepTracker:
 
   def measurePower(self, az: float, el: float):
     repeat = True
+    failed = False
+    minSpeedAz = self._rotor.minSpeed('AZ')
+    minSpeedEl = self._rotor.minSpeed('EL')
 
     while repeat:
       try:
@@ -44,7 +47,14 @@ class StepTracker:
         explain = str(e)
         if explain.find('TIMEOUT') == -1:
           raise e
+        failed = True
+        self._rotor.setMinSpeed('AZ', 100)
+        self._rotor.setMinSpeed('EL', 100)
         print(f'\033[1;31m[T]\033[0m ', end = '', flush = True)
+    
+    if failed:
+      self._rotor.setMinSpeed('AZ', minSpeedAz)
+      self._rotor.setMinSpeed('EL', minSpeedEl)
     
     time.sleep(self._wait)
     return self._rms.lastPower()

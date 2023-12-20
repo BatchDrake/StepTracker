@@ -16,6 +16,7 @@
  #
 
 import socket, threading
+import time
 
 class RMSListenerThread(threading.Thread):
   def __init__(self, listener):
@@ -34,11 +35,13 @@ class RMSListenerThread(threading.Thread):
         if len(parts) == 4:
           try:
               power = float(parts[2])
+              time  = float(parts[0])
+
               if self._power is None:
                 self._power = power
               else:
                 self._power += alpha * (power - self._power)
-                self._listener.setLastPower(self._power)
+                self._listener.setLastPower(time, self._power)
               
           except:
             print(fr"Malformed power ({parts[2]})")
@@ -67,10 +70,12 @@ class RMSListener:
     self._clifp   = None
 
     self._lastPower = None
+    self._lastPowerTime = time.time()
 
-  def setLastPower(self, power: float):
+  def setLastPower(self, time: float, power: float):
     self._lastPower = power
-  
+    self._lastPowerTime = time
+
   def alpha(self):
     return self._alpha
   
@@ -94,6 +99,15 @@ class RMSListener:
     return self._clifp.readline()
   
   def lastPower(self):
+    return self._lastPower
+  
+  def lastPowerTime(self, when = None):
+    if when is None:
+      when = time.time()
+    
+    while self._lastPowerTime < when:
+      time.sleep(.1)
+    
     return self._lastPower
   
   def running(self):
