@@ -17,6 +17,7 @@
 
 from RMSListener import RMSListener
 from RotorController import RotorController
+from Logger import Logger
 
 import time
 import numpy as np
@@ -27,6 +28,7 @@ POWERFRAC = 0.1 # At least 10% better
 
 class StepTracker:
   def __init__(self, rms: RMSListener, rotor: RotorController, threshold: float = POWERFRAC, wait: float = 2., delta = DELTA):
+    self._log   = Logger()
     self._rms   = rms
     self._rotor = rotor
     self._k     = 1 + threshold
@@ -50,7 +52,7 @@ class StepTracker:
         failed = True
         self._rotor.setMinSpeed('AZ', 100)
         self._rotor.setMinSpeed('EL', 100)
-        print(f'\033[1;31m[T]\033[0m ', end = '', flush = True)
+        self._log.warning(f'\033[1;31m[T]\033[0m ', end = '')
     
     if failed:
       self._rotor.setMinSpeed('AZ', minSpeedAz)
@@ -60,7 +62,7 @@ class StepTracker:
     return self._rms.lastPower()
   
   def diamondSearch(self, az: float, el: float, best = None):
-    print(fr'[i] Perform square search around {az}, {el}...')
+    self._log.info(fr'Perform diamond search around {az}, {el}...')
     # .----- 2 <----.
     # v             |
     # 3     [C] --> 1
@@ -86,13 +88,13 @@ class StepTracker:
     bestNdx  = i - 1
 
     while i < len(azs):
-      print(fr'[i] GOTO {azs[i]}, {els[i]} => ', end = '', flush = True)
+      self._log.info(fr'GOTO {azs[i]:6.2f}, {els[i]:6.2f} => ', end = '')
       pwr[i] = self.measurePower(azs[i], els[i])
-      print(fr'{10 * np.log10(pwr[i]):g} dB')
+      self._log.info(fr'{10 * np.log10(pwr[i]):g} dB')
 
       if bestNdx < 0 or pwr[i] > self._k * pwr[bestNdx]:
           bestNdx = i
-          print(fr'[i]   Current best!')
+          self._log.info(fr'   Current best!')
       
       i += 1
 
